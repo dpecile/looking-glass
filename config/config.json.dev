@@ -1,0 +1,135 @@
+{
+  "environment": "development",
+  "company": {
+    "name": "Siete Capas",
+    "logo": "/assets/logo.png",
+    "fallback_logo": "SC",
+    "website": "https://www.sietecapas.com"
+  },
+  "external_apis": {
+    "peeringdb": {
+      "enabled": true,
+      "base_url": "https://www.peeringdb.com/api",
+      "rate_limit_per_minute": 30,
+      "cache_ttl_seconds": 3600
+    },
+    "ripestat": {
+      "enabled": true, 
+      "base_url": "https://stat.ripe.net/data",
+      "rate_limit_per_minute": 60,
+      "cache_ttl_seconds": 1800
+    },
+    "fallback_asn_data": [
+      {
+        "asn": 7303,
+        "name": "Telecom Argentina S.A.",
+        "country": "AR",
+        "type": "NSP"
+      },
+      {
+        "asn": 6057,
+        "name": "Telefonica de Argentina",
+        "country": "AR", 
+        "type": "NSP"
+      },
+      {
+        "asn": 10481,
+        "name": "Telecentro S.A.",
+        "country": "AR",
+        "type": "Cable/DSL/ISP"
+      }
+    ]
+  },
+  "networks": [
+    {
+      "id": "AS64512",
+      "name": "AS64512 - Siete Capas Network",
+      "subnets_ipv4": [
+        "10.0.0.0/8",
+        "192.168.0.0/16",
+        "172.16.0.0/12"
+      ],
+      "subnets_ipv6": [
+        "2001:db8::/32",
+        "fd00::/8"
+      ],
+      "peeringdb_sync": true
+    }
+  ],
+  "routers": [
+    {
+      "id": "router_baires_1",
+      "name": "Router Principal Buenos Aires",
+      "location": "Buenos Aires - Datacenter",
+      "api_endpoint": "https://192.168.1.1/rest/",
+      "api_user": "lg_user",
+      "api_password": "secure_password_here",
+      "enabled": true,
+      "supports_ipv6": true,
+      "max_concurrent_commands": 5
+    },
+    {
+      "id": "router_cordoba_1", 
+      "name": "Router Córdoba Centro",
+      "location": "Córdoba - Centro",
+      "api_endpoint": "https://192.168.2.1/rest/",
+      "api_user": "lg_user",
+      "api_password": "secure_password_here", 
+      "enabled": true,
+      "supports_ipv6": true,
+      "max_concurrent_commands": 3
+    },
+    {
+      "id": "router_mendoza_1",
+      "name": "Router Edge Mendoza",
+      "location": "Mendoza - PoP",
+      "api_endpoint": "https://192.168.3.1/rest/",
+      "api_user": "lg_user", 
+      "api_password": "secure_password_here",
+      "enabled": true,
+      "supports_ipv6": false,
+      "max_concurrent_commands": 2
+    }
+  ],
+  "security": {
+    "rate_limit": {
+      "commands_per_minute": 10,
+      "commands_per_hour": 100,
+      "api_calls_per_minute": 50
+    },
+    "allowed_commands": [
+      "bgp",
+      "ping", 
+      "trace"
+    ],
+    "blocked_networks": [
+      "127.0.0.0/8",
+      "169.254.0.0/16",
+      "224.0.0.0/4",
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16"
+    ],
+    "max_hops_traceroute": 30,
+    "max_ping_count": 10,
+    "command_timeout_seconds": 30
+  },
+  "interface": {
+    "theme_color": "#8b5cf6",
+    "max_hops_traceroute": 30,
+    "ping_count": 5,
+    "timeout_seconds": 30,
+    "auto_refresh_networks": true,
+    "show_peeringdb_data": true,
+    "show_ripestat_data": true,
+    "default_protocol": "ipv4"
+  },
+  "logging": {
+    "enabled": true,
+    "log_level": "INFO",
+    "log_file": "/var/log/looking-glass/access.log",
+    "log_commands": true,
+    "log_api_calls": true,
+    "retention_days": 30
+  }
+}

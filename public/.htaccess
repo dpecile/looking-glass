@@ -1,0 +1,22 @@
+# Rewrite rules para el API
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.*)$ api.php?endpoint=$1 [QSA,L]
+
+# Denegar acceso a archivos PHP excepto los permitidos
+<FilesMatch "\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "^(api\.php|index\.php)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Denegar acceso a archivos sensibles
+<FilesMatch "\.(env|git|htaccess|json|md|log|bak|swp)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

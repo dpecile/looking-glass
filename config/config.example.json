@@ -1,0 +1,59 @@
+{
+  "environment": "production",
+  "company": {
+    "name": "Your Company Name",
+    "asn": "YOUR_ASN",
+    "logo": "/assets/Logo-XL.png",
+    "fallback_logo": "YC"
+  },
+  "recaptcha": {
+    "enabled": true,
+    "v3": {
+      "site_key": "USE_ENV_VARIABLE",
+      "secret_key": "USE_ENV_VARIABLE"
+    },
+    "v2": {
+      "site_key": "USE_ENV_VARIABLE",
+      "secret_key": "USE_ENV_VARIABLE"
+    }
+  },
+  "routers": [
+    {
+      "id": "frr_router_01",
+      "name": "FRR Router 1",
+      "location": "Your Location",
+      "backend": "frr",
+      "frr_host": "localhost",
+      "frr_ssh_user": "www-data",
+      "api_endpoint_ip": "127.0.0.1",
+      "api_user": "dummy",
+      "api_password": "dummy",
+      "enabled": true,
+      "supports_ipv6": true
+    }
+  ],
+  "security": {
+    "rate_limit": {
+      "commands_per_minute": 5,
+      "commands_per_hour": 50
+    },
+    "allowed_commands": ["bgp", "ping", "trace"],
+    "command_timeout_seconds": 20,
+    "blocked_networks": [
+      "127.0.0.0/8",
+      "169.254.0.0/16",
+      "224.0.0.0/4",
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16"
+    ]
+  },
+  "interface": {
+    "ping_count": 5,
+    "max_hops_traceroute": 15
+  },
+  "logging": {
+    "enabled": true,
+    "log_file": "/var/www/html/lg2/logs/looking-glass.log"
+  }
+}

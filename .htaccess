@@ -1,0 +1,14 @@
+# Denegar acceso a archivos sensibles
+<FilesMatch "^\.env">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Denegar acceso a directorios
+Options -Indexes
+
+# Denegar acceso a archivos de backup
+<FilesMatch "\.(bak|backup|swp|log)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

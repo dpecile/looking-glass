@@ -1,0 +1,15 @@
+# Looking Glass logging configuration
+# Instalar en: /etc/rsyslog.d/50-looking-glass.conf
+#
+# Instalación:
+#   sudo cp scripts/rsyslog-looking-glass.conf.example /etc/rsyslog.d/50-looking-glass.conf
+#   sudo mkdir -p /var/log/looking-glass
+#   sudo chown www-data:www-data /var/log/looking-glass
+#   sudo chmod 755 /var/log/looking-glass
+#   sudo systemctl restart rsyslog
+
+# Comandos vtysh (local0)
+local0.*  /var/log/looking-glass/vtysh.log
+
+# Eventos de seguridad (local1)
+local1.*  /var/log/looking-glass/security.log

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testConfig()">Test Config</button>
+    <button onclick="testClientInfo()">Test Client Info</button>
+    <button onclick="testDebug()">Test Debug</button>
+    <pre id="result"></pre>
+    
+    <script>
+        async function testConfig() {
+            try {
+                const response = await fetch('./api.php?endpoint=config');
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('result').textContent = 'Error: ' + e.message;
+            }
+        }
+        
+        async function testClientInfo() {
+            try {
+                const response = await fetch('./api.php?endpoint=client-info');
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('result').textContent = 'Error: ' + e.message;
+            }
+        }
+        
+        async function testDebug() {
+            try {
+                const response = await fetch('./api.php?endpoint=debug');
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('result').textContent = 'Error: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

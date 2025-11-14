@@ -1,0 +1,29 @@
+#!/bin/bash
+# Wrapper seguro de vtysh para Looking Glass
+# Instalar en: /usr/local/bin/lg-vtysh
+#
+# Instalación:
+#   sudo cp scripts/lg-vtysh.example /usr/local/bin/lg-vtysh
+#   sudo chmod +x /usr/local/bin/lg-vtysh
+#   sudo chown root:frrvty /usr/local/bin/lg-vtysh
+#   sudo chmod 750 /usr/local/bin/lg-vtysh
+
+# Comandos permitidos (expresión regular)
+ALLOWED_CMDS="^show (bgp|ip|ipv6) "
+
+# Validar que se pasó un comando
+if [ -z "$1" ]; then
+    echo "ERROR: No se especificó comando"
+    exit 1
+fi
+
+# Validar que el comando está permitido
+if echo "$1" | grep -qE "$ALLOWED_CMDS"; then
+    # Ejecutar vtysh con el comando
+    /usr/bin/vtysh -c "$1" 2>&1
+    exit $?
+else
+    echo "ERROR: Comando no permitido. Solo se permiten: show bgp, show ip, show ipv6"
+    logger -p local0.err -t lg-vtysh "Comando bloqueado: $1 desde IP: ${SSH_CLIENT:-local}"
+    exit 1
+fi

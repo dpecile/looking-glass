@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple</title>
+</head>
+<body>
+    <h1>Test de Configuración</h1>
+    <div id="debug"></div>
+    
+    <script>
+        async function testConfig() {
+            try {
+                console.log('Probando API...');
+                const response = await fetch('api.php?endpoint=config');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const config = await response.json();
+                    console.log('Config obtenido:', config);
+                    document.getElementById('debug').innerHTML = '<pre>' + JSON.stringify(config, null, 2) + '</pre>';
+                } else {
+                    const text = await response.text();
+                    console.log('Error response:', text);
+                    document.getElementById('debug').innerHTML = 'Error: ' + response.status + '<br>' + text;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('debug').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        window.addEventListener('load', testConfig);
+    </script>
+</body>
+</html>

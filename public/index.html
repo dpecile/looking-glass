@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Looking Glass</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+            background: white;
+            color: #333333;
+        }
+
+        .header {
+            height: 70px;
+            box-shadow: 0 2px 2px 0 rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header img {
+            height: 44px;
+            margin-top: 12px;
+            margin-left: 12px;
+        }
+
+        .container {
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&display=swap');
+        
+        h1 {
+            text-align: center;
+            color: #2E5C9A;
+            font-family: 'Titillium Web', sans-serif;
+            line-height: 2;
+            margin: 0;
+            font-size: 52px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .splash {
+            background-color: #2E5C9A;
+            color: white;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+
+        .querybox {
+            width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+
+        input[type=submit], input[type=text], select {
+            background-color: white;
+            border: 1px solid #eeeeee;
+            border-radius: 0.3em;
+            box-shadow: inset 0 5px 3px rgba(255, 255, 255, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+            font-size: 14px;
+            padding: 3px;
+            height: 30px;
+            box-sizing: border-box;
+        }
+        
+        input[type=submit] {
+            padding: 3px 8px;
+            font-size: 13px;
+            min-width: 60px;
+        }
+
+        input[type=text] {
+            padding: 3px 3px 3px 6px;
+        }
+
+        input[type=submit] {
+            background-color: rgb(242, 242, 242);
+            color: #2E5C9A;
+        }
+
+        input[type=submit]:hover {
+            background-color: #2E5C9A;
+            color: rgb(242, 242, 242);
+        }
+
+        div#results {
+            margin: 50px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: white;
+            color: #333333;
+        }
+
+        .path-info {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .asn-info {
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .error-text {
+            color: #dc2626;
+        }
+
+        .warning-text {
+            color: #d97706;
+        }
+
+        
+        /* Estilo para todo el contenedor del mejor path (best) - negro por defecto */
+        .best-path-container {
+            color: #333333;
+            font-weight: 500;
+        }
+        
+        /* Solo verde cuando RPKI es válido */
+        .best-path-container.rpki-valid {
+            color: #22c55e;
+        }
+        
+        /* Naranja cuando RPKI es unknown */
+        .best-path-container.rpki-unknown {
+            color: #f59e0b;
+        }
+    </style>
+    <!-- Google reCAPTCHA v3 y v2 -->
+    <script>
+        // Variables globales para reCAPTCHA
+        let grecaptchaReady = false;
+        let recaptchaScriptLoaded = false;
+        let recaptchaV2WidgetId = null;
+        let recaptchaV2Required = false;
+        let recaptchaSiteKeyV2 = null; // Site key específico para v2
+        
+        // Esta función se llamará cuando se cargue la configuración
+        function loadRecaptchaScript(siteKey) {
+            if (recaptchaScriptLoaded || !siteKey || siteKey === 'USE_ENV_VARIABLE') {
+                return;
+            }
+            
+            // Cargar reCAPTCHA con soporte para v2 y v3
+            const script = document.createElement('script');
+            // Para v3, necesitamos cargar con el site key
+            script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+            script.onload = function() {
+                // console.log('🔐 Script reCAPTCHA cargado');
+                if (typeof grecaptcha !== 'undefined') {
+                    // Renderizar reCAPTCHA v3
+                    grecaptcha.ready(function() {
+                        // console.log('🔐 grecaptcha está listo');
+                        grecaptchaReady = true;
+                        
+                        // También preparar el widget v2 pero no mostrarlo aún
+                        if (document.getElementById('recaptcha-v2-container')) {
+                            try {
+                                // console.log('🔐 Intentando renderizar v2 con key:', recaptchaSiteKeyV2 || recaptchaSiteKey);
+                                recaptchaV2WidgetId = grecaptcha.render('recaptcha-v2-container', {
+                                    'sitekey': recaptchaSiteKeyV2 || recaptchaSiteKey, // Usar v2 key si está disponible
+                                    'size': 'normal',
+                                    'callback': function(response) {
+                                        // console.log('🔐 reCAPTCHA v2 completado');
+                                    }
+                                });
+                                // console.log('🔐 Widget v2 renderizado con ID:', recaptchaV2WidgetId);
+                                // Ocultar inicialmente
+                                document.getElementById('recaptcha-v2-wrapper').style.display = 'none';
+                            } catch (error) {
+                                console.error('❌ Error renderizando widget v2:', error);
+                            }
+                        }
+                    });
+                } else {
+                    console.error('❌ grecaptcha no está definido después de cargar el script');
+                }
+            };
+            document.head.appendChild(script);
+            recaptchaScriptLoaded = true;
+        }
+        
+        function showRecaptchaV2() {
+            const wrapper = document.getElementById('recaptcha-v2-wrapper');
+            if (wrapper) {
+                wrapper.style.display = 'block';
+                recaptchaV2Required = true;
+            }
+        }
+        
+        function hideRecaptchaV2() {
+            const wrapper = document.getElementById('recaptcha-v2-wrapper');
+            if (wrapper) {
+                wrapper.style.display = 'none';
+                recaptchaV2Required = false;
+                if (recaptchaV2WidgetId !== null) {
+                    grecaptcha.reset(recaptchaV2WidgetId);
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <img id="companyLogo" style="height: 44px; margin-top: 12px; margin-left: 12px;" alt="Logo" src="./assets/Logo-XL.png">
+        </div>
+    </div>
+
+    <div>
+        <div class="container">
+            <h1>Looking Glass</h1>
+        </div>
+    </div>
+
+    <div class="splash">
+        <div class="container">
+            <form action="#results" onsubmit="executeCommand(); return false;" name="queryform">
+                <table class="querybox">
+                    <tr>
+                        <td style="width: 100px; vertical-align: bottom; font-size: 14px;">
+                            <label><input type="radio" name="command" value="bgp" checked> bgp</label>
+                        </td>
+                        <td style="font-size: 12px;">IP address or prefix:</td>
+                        <td style="font-size: 12px;">Router:</td>
+                    </tr>
+                    <tr>
+                        <td style="font-size: 14px;">
+                            <label><input type="radio" name="command" value="ping"> ping</label>
+                        </td>
+                        <td style="width: 285px;">
+                            <input type="text" id="targetIp" name="address" value="" style="width: 270px;" placeholder="Detectando IP del cliente...">
+                        </td>
+                        <td style="width: 225px;">
+                            <select id="routerSelect" name="router" style="width: 210px;">
+                                <option value="">Cargando routers...</option>
+                            </select>
+                        </td>
+                        <td style="width: 80px;">
+                            <input type="submit" id="runButton" value="Run" style="width: 100%;" disabled>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="vertical-align: top; font-size: 14px;">
+                            <label><input type="radio" name="command" value="trace"> trace</label>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </div>
+
+    <div>
+        <div class="container">
+            <!-- Contenedor para reCAPTCHA v2 (se muestra solo cuando v3 falla) -->
+            <div id="recaptcha-v2-wrapper" style="display: none; text-align: center; margin: 20px auto; padding: 20px; background: #f5f5f5; border-radius: 10px; max-width: 400px;">
+                <p style="margin-bottom: 20px; color: #666;">Por favor, completa la verificación de seguridad:</p>
+                <div id="recaptcha-v2-container" style="display: inline-block;"></div>
+                <p style="margin-top: 15px; font-size: 14px; color: #999;">Tu puntuación de seguridad fue baja. Completa este paso para continuar.</p>
+            </div>
+            
+            <div id="results">Looking Glass - Inicializando
+============================
+
+🔍 Detectando IP del cliente...
+🌐 Consultando PeeringDB API...
+📊 Obteniendo datos de RIPEstat...
+⚙️ Cargando configuración de routers...
+
+Estado: Inicializando servicios externos</div>
+        </div>
+    </div>
+
+    <script>
+        // Función para sanitizar HTML y prevenir XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        let clientInfo = {
+            ipv4: null,
+            ipv6: null,
+            asn: null,
+            asn_name: null,
+            network: null,
+            country: null,
+            currentProtocol: 'ipv4',
+            peeringDbData: null,
+            ripestatData: null,
+            previousIP: null
+        };
+        
+        let recaptchaEnabled = false;
+        let recaptchaSiteKey = null;
+        let recaptchaWidgetId = null;
+
+        // URLs de APIs - usando query parameters para compatibilidad sin .htaccess
+        const APIs = {
+            config: 'api.php?endpoint=config',
+            execute: 'api.php?endpoint=execute', 
+            client_info: 'api.php?endpoint=client-info',
+            status: 'api.php?endpoint=status'
+        };
+
+        // Cargar todo al iniciar
+        window.addEventListener('load', async function() {
+            // console.log('Página cargada, iniciando configuración...');
+            
+            try {
+                // Cargar configuración primero (rápido)
+                await loadConfiguration();
+                // console.log('Configuración cargada, inicializando interfaz...');
+                
+                // Inicializar interfaz inmediatamente
+                initializeInterface();
+                
+                // Detectar info del cliente en segundo plano (lento)
+                detectClientInfo().catch(error => {
+                    console.error('Error detectando cliente:', error);
+                });
+            } catch (error) {
+                console.error('Error en la inicialización:', error);
+            }
+        });
+
+        async function loadConfiguration() {
+            try {
+                // console.log('🔧 Iniciando carga de configuración...');
+                
+                let config = null;
+                let isDevelopment = false;
+
+                try {
+                    // console.log('📡 Haciendo request a api/config...');
+                    const apiUrl = APIs.config;
+                    // console.log('📡 URL construida:', apiUrl);
+                    
+                    const response = await fetch(apiUrl);
+                    // console.log('📡 Response status:', response.status);
+                    
+                    if (response.ok) {
+                        const responseText = await response.text();
+                        // console.log('📡 Response text (primeros 200 chars):', responseText.substring(0, 200));
+                        
+                        try {
+                            config = JSON.parse(responseText);
+                            // console.log('✅ Config parseado correctamente. Routers encontrados:', config.routers?.length || 0);
+                            
+                            // Verificar entorno desde la configuración
+                            isDevelopment = (config.environment === 'development' || config.environment === 'dev');
+                            // console.log('🌍 Environment detectado:', config.environment);
+                        } catch (parseError) {
+                            console.error('❌ Error parseando JSON response:', parseError);
+                            // console.log('📄 Response completo:', responseText);
+                            throw parseError;
+                        }
+                    } else {
+                        // console.warn('⚠️ Response no OK:', response.status, response.statusText);
+                        const errorText = await response.text();
+                        // console.log('📄 Error response:', errorText.substring(0, 200));
+                        
+                        // Si no hay respuesta del servidor, asumir que estamos en desarrollo local
+                        // console.log('🔧 Asumiendo modo desarrollo por falta de servidor');
+                        isDevelopment = true;
+                    }
+                } catch (fetchError) {
+                    // console.warn('⚠️ Error en fetch:', fetchError);
+                    // console.log('🔧 Asumiendo modo desarrollo por error de conexión');
+                    isDevelopment = true;
+                }
+
+                // Si no hay configuración válida
+                if (!config) {
+                    if (isDevelopment) {
+                        // console.log('🛠️ Modo desarrollo: Usando configuración por defecto');
+                        config = {
+                            environment: "development",
+                            company: {
+                                name: "Looking Glass",
+                                logo: null,
+                                fallback_logo: "LG"
+                            },
+                            routers: [
+                                { id: "router1", name: "Router Principal", location: "Buenos Aires", enabled: true },
+                                { id: "router2", name: "Router Secundario", location: "Córdoba", enabled: true },
+                                { id: "router3", name: "Router Edge", location: "Mendoza", enabled: true }
+                            ]
+                        };
+                    } else {
+                        console.error('❌ En producción sin config, mostrando error');
+                        // En producción sin config, mostrar error y no continuar
+                        console.error('Error: Configuración del sistema no disponible');
+                        document.getElementById('runButtonText').textContent = 'No disponible';
+                        document.querySelector('.run-btn').disabled = true;
+                        
+                        // Ocultar controles en producción sin config
+                        document.querySelector('.control-panel').style.display = 'none';
+                        document.querySelector('.client-info').style.display = 'none';
+                        
+                        const resultsOutput = document.getElementById('resultsOutput');
+                        resultsOutput.innerHTML = `<span class="error-text">Error de Configuración</span>
+${'='.repeat(25)}
+
+El sistema no puede inicializar correctamente.
+Contacte al administrador del sistema.
+
+Estado: Configuración no disponible`;
+                        return;
+                    }
+                }
+
+                // Verificar que la configuración tenga los campos necesarios
+                if (!config.company || !config.routers) {
+                    console.error('❌ Configuración incompleta:', config);
+                    console.error('Error: Configuración incompleta');
+                    return;
+                }
+
+                // Guardar configuración globalmente
+                window.config = config;
+                window.isDevelopment = isDevelopment;
+                
+                // console.log('✅ Configuración guardada globalmente');
+                // console.log('📊 Config final:', window.config);
+                // console.log('📊 Routers en config:', window.config.routers);
+                
+                // Mostrar indicador de entorno en desarrollo
+                if (isDevelopment) {
+                    // console.log('🔧 Modo desarrollo activo');
+                    document.body.style.borderTop = '3px solid #f59e0b';
+                }
+                
+                updateCompanyBranding();
+                populateRouters();
+                
+            } catch (error) {
+                console.error('❌ Error crítico cargando configuración:', error);
+                
+                // Configuración de fallback
+                window.config = {
+                    environment: "production",
+                    company: {
+                        name: "Your Network",
+                        asn: "YOUR_ASN",
+                        logo: "./assets/Logo-XL.png",
+                        fallback_logo: "YN"
+                    },
+                    routers: [
+                        {
+                            id: "frr_router_01",
+                            name: "FRR Neuquen",
+                            location: "Neuquen",
+                            enabled: true,
+                            supports_ipv6: true
+                        }
+                    ]
+                };
+                
+                // console.log('🔧 Usando configuración de fallback');
+                updateCompanyBranding();
+                populateRouters();
+            }
+            
+            // Configurar reCAPTCHA si está habilitado
+            if (window.config && window.config.recaptcha && window.config.recaptcha.enabled) {
+                recaptchaEnabled = true;
+                
+                // Manejar la nueva estructura con v2 y v3 separados
+                if (window.config.recaptcha.v3) {
+                    recaptchaSiteKey = window.config.recaptcha.v3.site_key;
+                } else {
+                    // Fallback para configuración antigua
+                    recaptchaSiteKey = window.config.recaptcha.site_key;
+                }
+                
+                // Cargar site key de v2 si está disponible
+                if (window.config.recaptcha.v2) {
+                    recaptchaSiteKeyV2 = window.config.recaptcha.v2.site_key;
+                } else {
+                    // Si no hay v2 específico, usar el mismo que v3
+                    recaptchaSiteKeyV2 = recaptchaSiteKey;
+                }
+                
+                // console.log('🔐 reCAPTCHA habilitado');
+                // console.log('🔐 v3 site key:', recaptchaSiteKey);
+                // console.log('🔐 v2 site key:', recaptchaSiteKeyV2);
+                
+                if (!recaptchaSiteKey || recaptchaSiteKey === 'USE_ENV_VARIABLE') {
+                    console.error('❌ reCAPTCHA v3 site key no configurado correctamente');
+                    recaptchaEnabled = false;
+                } else {
+                    initializeRecaptcha();
+                }
+            } else {
+                // console.log('🔐 reCAPTCHA no habilitado en la configuración');
+            }
+        }
+
+        function updateCompanyBranding() {
+            // Usar configuración global
+            if (!window.config) return;
+
+            document.title = `${window.config.company.name} - Looking Glass`;
+            
+            const logoImg = document.getElementById('companyLogo');
+            
+            if (window.config.company.logo) {
+                // Asegurar que el path es correcto
+                const logoPath = window.config.company.logo.startsWith('/') 
+                    ? '.' + window.config.company.logo 
+                    : window.config.company.logo;
+                logoImg.src = logoPath;
+                // console.log('Logo path configurado:', logoPath);
+            }
+        }
+
+        function populateRouters() {
+            if (!window.config || !window.config.routers) return;
+
+            const routerSelect = document.getElementById('routerSelect');
+            routerSelect.innerHTML = '';
+            
+            window.config.routers.filter(r => r.enabled).forEach(router => {
+                const option = document.createElement('option');
+                option.value = router.id;
+                option.textContent = `${router.name} (${router.location})`;
+                routerSelect.appendChild(option);
+            });
+            
+            // console.log('Routers cargados:', window.config.routers.length);
+        }
+
+        async function detectClientInfo() {
+            try {
+                // Usar valores temporales inmediatamente
+                clientInfo.ipv4 = 'Detectando...';
+                clientInfo.ipv6 = 'Detectando...';
+                updateClientDisplay();
+                
+                // Hacer la petición con timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos timeout
+                
+                const response = await fetch(APIs.client_info, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // console.log('📡 Respuesta client-info:', data);
+                    
+                    // Actualizar información del cliente
+                    clientInfo.ipv4 = data.ipv4 || 'No detectada';
+                    clientInfo.ipv6 = data.ipv6 || 'No disponible';
+                    clientInfo.asn = data.asn;
+                    clientInfo.asn_name = data.asn_name;
+                    clientInfo.network = data.network;
+                    clientInfo.country = data.country;
+                    clientInfo.peeringDbData = data.peeringdb;
+                    clientInfo.ripestatData = data.ripestat;
+                    
+                    // console.log('📊 ClientInfo actualizado:', clientInfo);
+                    updateClientDisplay();
+                } else {
+                    console.error('❌ Response no OK:', response.status);
+                    throw new Error('No se pudo obtener información del cliente');
+                }
+                
+            } catch (error) {
+                console.error('Error detectando información del cliente:', error);
+                // Usar IP local como fallback
+                clientInfo.ipv4 = 'IP no detectada';
+                clientInfo.ipv6 = 'No disponible';
+                updateClientDisplay();
+            }
+        }
+
+
+
+        function updateClientDisplay() {
+            const currentIP = clientInfo.ipv4;
+            updateTargetIP();
+            
+            // Actualizar la información mostrada en el div de resultados
+            const resultsDiv = document.getElementById('results');
+            if (resultsDiv && resultsDiv.innerHTML.includes('Sistema inicializado correctamente')) {
+                resultsDiv.innerHTML = `${window.config ? window.config.company.name : 'Network'} Looking Glass
+${'='.repeat((window.config ? window.config.company.name : 'Network').length + 15)}
+
+Sistema inicializado correctamente
+
+Información del Cliente:
+• IP detectada: ${clientInfo.ipv4 || 'No disponible'}
+${clientInfo.asn ? `• ASN del cliente: AS${clientInfo.asn}${clientInfo.asn_name ? ` (${clientInfo.asn_name})` : ''}` : '• ASN del cliente: No detectado'}
+${clientInfo.network ? `• Red: ${clientInfo.network}` : '• Red: No identificada'}
+${clientInfo.country ? `• País: ${clientInfo.country}` : ''}
+
+Comandos Disponibles:
+• BGP: Consultar rutas BGP
+• Ping: Realizar ping desde nuestros routers  
+• Trace: Realizar traceroute desde nuestros routers
+
+Selecciona un comando y router, luego haz clic en "Run"`;
+            }
+        }
+
+        function updateTargetIP() {
+            const targetInput = document.getElementById('targetIp');
+            const currentIP = clientInfo.ipv4;
+            
+            if (currentIP && currentIP !== 'No disponible' && currentIP !== 'Detectando...') {
+                if (!targetInput.value || targetInput.value === clientInfo.previousIP) {
+                    targetInput.value = currentIP;
+                }
+                targetInput.placeholder = `IP detectada: ${currentIP}`;
+                clientInfo.previousIP = currentIP;
+            } else {
+                targetInput.placeholder = 'Detectando IP del cliente...';
+            }
+        }
+
+
+        function calculateNetwork24(ip, protocol) {
+            if (protocol === 'ipv6') {
+                const parts = ip.split(':');
+                if (parts.length >= 4) {
+                    return `${parts.slice(0, 4).join(':')}::/64`;
+                }
+                return `${ip}/64`;
+            } else {
+                const parts = ip.split('.');
+                if (parts.length === 4) {
+                    return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+                }
+                return `${ip}/24`;
+            }
+        }
+
+        function isValidIP(ip) {
+            // Quitar CIDR si existe
+            const cleanIP = ip.split('/')[0];
+            
+            const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            const ipv6Regex = /^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$/;
+            
+            return ipv4Regex.test(cleanIP) || ipv6Regex.test(cleanIP);
+        }
+        
+        function detectIPProtocol(ip) {
+            // Quitar CIDR si existe
+            const cleanIP = ip.split('/')[0];
+            
+            // IPv6 tiene : en la dirección
+            if (cleanIP.includes(':')) {
+                return 'ipv6';
+            }
+            
+            // IPv4 regex
+            const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (ipv4Regex.test(cleanIP)) {
+                return 'ipv4';
+            }
+            
+            // Por defecto IPv4
+            return 'ipv4';
+        }
+
+
+        function initializeInterface() {
+            document.getElementById('runButton').disabled = false;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `${window.config ? window.config.company.name : 'Siete Capas'} Looking Glass
+${'='.repeat((window.config ? window.config.company.name : 'Siete Capas').length + 15)}
+
+Sistema inicializado correctamente
+
+Información del Cliente:
+• IP detectada: ${clientInfo.ipv4 || 'No disponible'}
+${clientInfo.asn ? `• ASN del cliente: AS${clientInfo.asn}${clientInfo.asn_name ? ` (${clientInfo.asn_name})` : ''}` : '• ASN del cliente: No detectado'}
+${clientInfo.network ? `• Red: ${clientInfo.network}` : '• Red: No identificada'}
+${clientInfo.country ? `• País: ${clientInfo.country}` : ''}
+
+Comandos Disponibles:
+• BGP: Consultar rutas BGP
+• Ping: Realizar ping desde nuestros routers  
+• Trace: Realizar traceroute desde nuestros routers
+
+Selecciona un comando y router, luego haz clic en "Run"`;
+        }
+
+
+        function initializeRecaptcha() {
+            // console.log('🔐 Inicializando reCAPTCHA...');
+            // console.log('recaptchaEnabled:', recaptchaEnabled);
+            // console.log('recaptchaSiteKey:', recaptchaSiteKey);
+            // console.log('recaptchaSiteKeyV2:', recaptchaSiteKeyV2);
+            
+            if (!recaptchaEnabled || !recaptchaSiteKey || recaptchaSiteKey === 'TU_SITE_KEY_AQUI' || recaptchaSiteKey === 'USE_ENV_VARIABLE') {
+                // console.warn('reCAPTCHA no configurado correctamente');
+                // console.warn('Site key v3:', recaptchaSiteKey);
+                // console.warn('Site key v2:', recaptchaSiteKeyV2);
+                recaptchaEnabled = false;
+                return;
+            }
+            
+            // Cargar el script de reCAPTCHA dinámicamente con el site key correcto
+            loadRecaptchaScript(recaptchaSiteKey);
+            // console.log('🔐 Script de reCAPTCHA solicitado');
+        }
+
+        async function executeCommand() {
+            const command = document.querySelector('input[name="command"]:checked').value;
+            let targetIp = document.getElementById('targetIp').value.trim();
+            const routerSelect = document.getElementById('routerSelect');
+            
+            if (!targetIp) {
+                document.getElementById('results').textContent = 'Error: Ingresa una IP de destino';
+                return;
+            }
+            
+            if (!routerSelect.value) {
+                document.getElementById('results').textContent = 'Error: Selecciona un router';
+                return;
+            }
+            
+            // Verificar reCAPTCHA
+            let recaptchaResponse = null;
+            let recaptchaVersion = 'v3'; // Por defecto intentamos v3
+            
+            if (recaptchaEnabled && typeof grecaptcha !== 'undefined' && grecaptchaReady) {
+                // Si reCAPTCHA v2 es requerido (porque v3 falló anteriormente)
+                if (recaptchaV2Required) {
+                    const v2Response = grecaptcha.getResponse(recaptchaV2WidgetId);
+                    if (!v2Response) {
+                        document.getElementById('results').textContent = 'Error: Por favor completa la verificación de seguridad.';
+                        return;
+                    }
+                    recaptchaResponse = v2Response;
+                    recaptchaVersion = 'v2';
+                    // console.log('🔐 Usando respuesta de reCAPTCHA v2');
+                } else {
+                    // Intentar primero con v3
+                    // console.log('🔐 reCAPTCHA habilitado, solicitando token v3...');
+                    // console.log('🔐 grecaptcha disponible:', typeof grecaptcha !== 'undefined');
+                    // console.log('🔐 grecaptcha.execute disponible:', typeof grecaptcha !== 'undefined' && typeof grecaptcha.execute === 'function');
+                    // console.log('🔐 Site key v3 a usar:', recaptchaSiteKey);
+                    
+                    try {
+                        recaptchaResponse = await grecaptcha.execute(recaptchaSiteKey, {action: 'execute_command'});
+                        // console.log('🔐 Token reCAPTCHA v3 obtenido:', recaptchaResponse.substring(0, 20) + '...');
+                    } catch (error) {
+                        console.error('❌ Error obteniendo token reCAPTCHA v3:', error);
+                        console.error('❌ Detalles del error:', error.message);
+                        console.error('❌ Stack trace:', error.stack);
+                        document.getElementById('results').textContent = 'Error: No se pudo verificar reCAPTCHA. Por favor recarga la página.';
+                        return;
+                    }
+                }
+            } else if (recaptchaEnabled && !grecaptchaReady) {
+                console.error('⚠️ reCAPTCHA habilitado pero no está listo aún');
+                document.getElementById('results').textContent = 'Error: reCAPTCHA no está listo. Por favor intenta de nuevo en unos segundos.';
+                return;
+            }
+
+            // Detectar protocolo automáticamente
+            const protocol = detectIPProtocol(targetIp);
+            // console.log('Protocolo detectado:', protocol, 'para IP:', targetIp);
+            
+            let actualTarget = targetIp;
+            if (command === 'bgp' && isValidIP(targetIp) && !targetIp.includes('/')) {
+                actualTarget = calculateNetwork24(targetIp, protocol);
+            }
+
+            const runButton = document.getElementById('runButton');
+            runButton.disabled = true;
+            runButton.value = 'Ejecutando...';
+            
+            try {
+                const result = await executeBackendCommand(command, actualTarget, routerSelect.value, protocol, recaptchaResponse, recaptchaVersion);
+                document.getElementById('results').innerHTML = result;
+                
+                // Si todo salió bien, ocultar reCAPTCHA v2 si estaba visible
+                if (recaptchaV2Required) {
+                    hideRecaptchaV2();
+                }
+                
+            } catch (error) {
+                console.error('Error al ejecutar comando: ' + error.message);
+                
+                // Si el error es por reCAPTCHA v3 con score bajo, mostrar v2
+                if (error.message.includes('score bajo') || error.message.includes('low score')) {
+                    showRecaptchaV2();
+                    document.getElementById('results').innerHTML = '<span class="error-text">Tu puntuación de seguridad fue baja. Por favor completa la verificación manual arriba y vuelve a intentar.</span>';
+                } else {
+                    document.getElementById('results').textContent = 'Error: No se pudo ejecutar el comando - ' + error.message;
+                }
+            } finally {
+                runButton.disabled = false;
+                runButton.value = 'Run';
+            }
+        }
+
+        async function executeBackendCommand(command, target, routerId, protocol, recaptchaResponse, recaptchaVersion = 'v3') {
+            try {
+                // console.log('📡 Ejecutando comando a través del backend:', { command, target, routerId, protocol, recaptchaVersion });
+                
+                const payload = {
+                    command: command,
+                    target: target,
+                    router_id: routerId,
+                    protocol: protocol
+                };
+                
+                // Agregar reCAPTCHA si está presente
+                if (recaptchaResponse) {
+                    payload.recaptcha_response = recaptchaResponse;
+                    payload.recaptcha_version = recaptchaVersion;
+                }
+                
+                const response = await fetch(APIs.execute, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                // console.log('📡 Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                // console.log('📡 Response data:', data);
+                
+                if (data.error) {
+                    throw new Error(data.message);
+                }
+
+                return formatBackendCommandOutput(data);
+
+            } catch (error) {
+                console.error('❌ Error en comando backend:', error);
+                throw error;
+            }
+        }
+
+        function formatBackendCommandOutput(data) {
+            let output = '';
+            
+            // Mostrar warning si existe
+            if (data.warning) {
+                output += `<span class="warning-text">⚠️ ${escapeHtml(data.warning)}</span>\n\n`;
+            }
+            
+            // Procesar el resultado y formatear mensaje RPKI
+            let processedResult = escapeHtml(data.result);
+            
+            // Procesar mensaje RPKI válido - solo texto verde sin cuadro
+            processedResult = processedResult.replace(
+                /The active path has a valid matching Route Origin Authorization \(ROA\) record\./g,
+                '<span style="color: #22c55e; font-weight: 600;">✓ The active path has a valid matching Route Origin Authorization (ROA) record.</span>'
+            );
+            
+            // Procesar mensaje RPKI inválido - solo texto rojo sin cuadro
+            processedResult = processedResult.replace(
+                /⚠️ The active path has an INVALID Route Origin Authorization \(ROA\) record\./g,
+                '<span style="color: #ef4444; font-weight: 600;">⚠️ The active path has an INVALID Route Origin Authorization (ROA) record.</span>'
+            );
+            
+            // Procesar mensaje RPKI unknown - solo texto naranja sin cuadro
+            processedResult = processedResult.replace(
+                /The active path do not have a matching Route Origin Authorization \(ROA\) record but is still the best route\./g,
+                '<span style="color: #f59e0b; font-weight: 600;">⚠️ The active path do not have a matching Route Origin Authorization (ROA) record but is still the best route.</span>'
+            );
+            
+            // Procesar el estado RPKI en la línea de atributos
+            processedResult = processedResult.replace(
+                /rpki validation-state: valid/g,
+                '<strong>rpki validation-state: valid</strong>'
+            );
+            processedResult = processedResult.replace(
+                /rpki validation-state: invalid/g,
+                '<strong>rpki validation-state: invalid</strong>'
+            );
+            processedResult = processedResult.replace(
+                /rpki validation-state: notfound/g,
+                '<strong>rpki validation-state: notfound</strong>'
+            );
+            
+            // Colorear las líneas que contienen "best" según el estado RPKI
+            if (data.result.includes('rpki validation-state: valid')) {
+                // Buscar y colorear la línea completa que contiene ", best"
+                processedResult = processedResult.replace(
+                    /(Path #\d+: \(best\)[\s\S]*?(?=Path #|\n\n|$))/g,
+                    '<span style="color: #22c55e;">$1</span>'
+                );
+            } else if (data.result.includes('rpki validation-state: invalid')) {
+                processedResult = processedResult.replace(
+                    /(Path #\d+: \(best\)[\s\S]*?(?=Path #|\n\n|$))/g,
+                    '<span style="color: #ef4444;">$1</span>'
+                );
+            } else {
+                // Para notfound o sin RPKI, usar naranja
+                processedResult = processedResult.replace(
+                    /(Path #\d+: \(best\)[\s\S]*?(?=Path #|\n\n|$))/g,
+                    '<span style="color: #f59e0b;">$1</span>'
+                );
+            }
+            
+            // Para todos los comandos, mostrar la info arriba sin panel expandible
+            output += `Target: ${escapeHtml(data.target)} (${escapeHtml(data.protocol.toUpperCase())})
+Timestamp: ${escapeHtml(new Date(data.timestamp).toLocaleString())}
+
+`;
+            output += processedResult;
+
+            if (data.execution_time_ms) {
+                output += `\n\n<span class="data-source">Tiempo de ejecución: ${data.execution_time_ms}ms</span>`;
+            }
+
+            return output;
+        }
+
+        async function simulateEnhancedCommand(command, targetIp, router, originalIp = null) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const timestamp = new Date().toLocaleString();
+            const protocol = clientInfo.currentProtocol.toUpperCase();
+            const displayIp = originalIp || targetIp;
+
+            switch (command) {
+                case 'bgp':
+                    const bgpNote = originalIp && originalIp !== targetIp ? 
+                        `\nNota: IP ${originalIp} convertida a red ${targetIp}` : '';
+                    
+                    return `<span class="path-info">BGP routing table entry for ${targetIp} (${protocol})</span>${bgpNote}
+Consultado desde: ${router.name} (${router.location})
+Timestamp: ${timestamp}
+Protocol: ${protocol}
+
+<span class="path-info">Ruta encontrada:</span>
+Path: ${clientInfo.asn || 'Unknown'} ${generateASPath()}
+  Next-hop: ${generateRandomIP(clientInfo.currentProtocol)}
+  Origin: IGP, localpref 100, valid, external, best
+  Communities: ${clientInfo.asn ? `${clientInfo.asn}:1000 ${clientInfo.asn}:2000` : 'N/A'}`;
+
+                case 'ping':
+                    return `PING ${displayIp} (${displayIp}) desde ${router.name}:
+Protocol: ${protocol}
+Timestamp: ${timestamp}
+Target Network: ${clientInfo.network || 'Unknown'}
+${clientInfo.asn ? `Target ASN: AS${clientInfo.asn}` : ''}
+
+64 bytes from ${displayIp}: icmp_seq=1 time=${(Math.random() * 50 + 10).toFixed(3)}ms
+64 bytes from ${displayIp}: icmp_seq=2 time=${(Math.random() * 50 + 10).toFixed(3)}ms
+64 bytes from ${displayIp}: icmp_seq=3 time=${(Math.random() * 50 + 10).toFixed(3)}ms
+64 bytes from ${displayIp}: icmp_seq=4 time=${(Math.random() * 50 + 10).toFixed(3)}ms
+64 bytes from ${displayIp}: icmp_seq=5 time=${(Math.random() * 50 + 10).toFixed(3)}ms
+
+--- ${displayIp} ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss
+rtt min/avg/max/mdev = ${(Math.random() * 10 + 10).toFixed(3)}/${(Math.random() * 20 + 20).toFixed(3)}/${(Math.random() * 30 + 40).toFixed(3)}/2.123 ms
+
+<span class="data-source">Información de destino obtenida de PeeringDB/RIPEstat</span>`;
+
+                case 'trace':
+                    return `Traceroute to ${displayIp} desde ${router.name} (${router.location})
+Protocol: ${protocol}
+Timestamp: ${timestamp}
+Target Network: ${clientInfo.network || 'Unknown'}
+${clientInfo.asn ? `Target ASN: AS${clientInfo.asn}` : ''}
+
+ 1  gateway.local (${generateRandomIP(clientInfo.currentProtocol)})  1.${Math.floor(Math.random() * 999)}ms
+ 2  ${router.location.toLowerCase()}-core (${generateRandomIP(clientInfo.currentProtocol)})  ${(Math.random() * 10 + 5).toFixed(3)}ms
+ 3  provider-gateway (${generateRandomIP(clientInfo.currentProtocol)})  ${(Math.random() * 20 + 15).toFixed(3)}ms
+ 4  <span class="asn-info">AS${clientInfo.asn || 'unknown'}</span>-border (${generateRandomIP(clientInfo.currentProtocol)})  ${(Math.random() * 25 + 20).toFixed(3)}ms
+ 5  ${displayIp}  ${(Math.random() * 30 + 25).toFixed(3)}ms
+
+<span class="path-info">Ruta completada en 5 saltos</span>
+${clientInfo.country ? `Destino geolocalizado en: ${clientInfo.country}` : ''}
+
+<span class="data-source">Enrutamiento analizado con datos de PeeringDB/RIPEstat</span>`;
+
+                default:
+                    return 'Comando no reconocido';
+            }
+        }
+
+
+
+        function generateASPath() {
+            const commonASNs = [174, 3356, 1299, 6762, 3549, 701];
+            const path = [];
+            const pathLength = Math.floor(Math.random() * 3) + 2;
+            
+            for (let i = 0; i < pathLength; i++) {
+                path.push(commonASNs[Math.floor(Math.random() * commonASNs.length)]);
+            }
+            
+            return path.join(' ');
+        }
+
+        function generateRandomIP(protocol) {
+            if (protocol === 'ipv6') {
+                return `2001:db8:${Math.floor(Math.random() * 65536).toString(16)}::${Math.floor(Math.random() * 65536).toString(16)}`;
+            } else {
+                return `${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}.${Math.floor(Math.random() * 254) + 1}`;
+            }
+        }
+
+        // showStatus eliminado por solicitud del usuario
+
+        // Event listener para Enter en el campo de texto
+        document.getElementById('targetIp').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                executeCommand();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Environment variables
+.env
+
+# Configuration with real data
+config/config.json
+
+# Documentation
+docs/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.swp
+*.bak
+*.backup
+*.tmp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+vendor/
+node_modules/
